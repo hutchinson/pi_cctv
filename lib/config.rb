@@ -4,6 +4,7 @@ require 'json'
 
 class Configuration
 
+  # Create new instance of the Configuration class
   def initialize(file)
     @file = file
 
@@ -13,11 +14,13 @@ class Configuration
       @config = JSON.parse(file_contents)
     else
       @config = Hash.new()
-      puts "File '#{@file}' does not exist."
+      puts "Warning: File '#{@file}' does not exist."
     end
   end
 
-  def value(key, default=nil)
+  # Return the value for the specified key, or the default
+  # value if it has not been specified.
+  def value(key, default = nil)
    if @config.has_key?(key)
      @config[key]
    else
