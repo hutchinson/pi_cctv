@@ -5,6 +5,8 @@
 
 require 'singleton'
 
+require_relative 'config'
+
 module PiCctv
   # Capture handlers can be executed either before the active storage handler
   # is run (in which case they can modify the image being stored), or post
@@ -53,6 +55,15 @@ module PiCctv
 
       @capture_handlers[PRE_STORAGE] = []
       @capture_handlers[POST_STORAGE] = []
+
+      @config = nil
+    end
+
+    # Start up the capture manager using the specified configuration file
+    def boot(config = 'etc/pi_cctv.json')
+      @config = PiCctv::Configuration.new(config)
+
+      puts "Booted up with #{@config}."
     end
 
     # Set the active storage handler
@@ -115,3 +126,4 @@ captureManager.set_active_storage_handler TestStorageHandler.new
 captureManager.register_capture_handler(TestCaptureHandler.new)
 captureManager.register_capture_handler(TestCaptureHandler.new, PiCctv::PRE_STORAGE)
 
+captureManager.boot
