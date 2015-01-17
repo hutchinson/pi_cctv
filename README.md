@@ -1,6 +1,7 @@
 # PiCctv
 
-TODO: Write a gem description
+This is a simple CCTV system for the RaspberryPi, primarily as an exercise
+to help learn Ruby.
 
 ## Installation
 
@@ -19,8 +20,6 @@ Or install it yourself as:
     $ gem install pi_cctv
 
 ## Usage
-
-TODO: Write usage instructions here
 
 ## Contributing
 
