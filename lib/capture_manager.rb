@@ -38,6 +38,9 @@ module PiCctv
     end
   end
 
+  PRE_STORAGE = :PRE_STORAGE
+  POST_STORAGE = :POST_STORAGE
+
   # The CaptureManager is responsible for scheduling images to be taken on the
   # given schedule and calling the registered CaptureHandlers and
   # StorageHandlers.
@@ -46,6 +49,10 @@ module PiCctv
 
     def initialize()
       @active_storage_handler = nil
+      @capture_handlers = {}
+
+      @capture_handlers[PRE_STORAGE] = []
+      @capture_handlers[POST_STORAGE] = []
     end
 
     # Set the active storage handler
@@ -64,8 +71,24 @@ module PiCctv
 
       @active_storage_handler = new_handler
     end
+
+    # Register a capture handler to run either pre or post the storage handler
+    def register_capture_handler(handler, execute_when = POST_STORAGE)
+      if handler == nil or not handler.kind_of? CaptureHandler
+        puts "Warning: handler must not be nil and must derive from CaptureHandler."
+      end
+
+      if !(execute_when == PRE_STORAGE or execute_when == POST_STORAGE)
+        puts "Warning: execute_when must be either PRE_STORAGE or POST_STORAGE."
+        return
+      end
+
+      @capture_handlers[execute_when] = handler
+    end
   end
 end
+
+###############################################################################
 
 class TestStorageHandler < PiCctv::StorageHandler
 
@@ -79,5 +102,16 @@ class TestStorageHandler < PiCctv::StorageHandler
   end
 end
 
-PiCctv::CaptureManager.instance.set_active_storage_handler TestStorageHandler.new
-PiCctv::CaptureManager.instance.set_active_storage_handler TestStorageHandler.new
+###############################################################################
+
+class TestCaptureHandler < PiCctv::CaptureHandler
+
+end
+
+captureManager = PiCctv::CaptureManager.instance
+captureManager.set_active_storage_handler TestStorageHandler.new
+captureManager.set_active_storage_handler TestStorageHandler.new
+
+captureManager.register_capture_handler(TestCaptureHandler.new)
+captureManager.register_capture_handler(TestCaptureHandler.new, PiCctv::PRE_STORAGE)
+
