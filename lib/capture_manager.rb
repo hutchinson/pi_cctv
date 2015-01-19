@@ -4,6 +4,7 @@
 #
 
 require 'singleton'
+require 'timers'
 
 require_relative 'config'
 
@@ -18,6 +19,10 @@ module PiCctv
     # were used to take it.
     def process(image_path, context)
       # Do nothing, this is just a base class
+    end
+
+    def name()
+
     end
   end
 
@@ -57,13 +62,67 @@ module PiCctv
       @capture_handlers[POST_STORAGE] = []
 
       @config = nil
+
+      @timer_group = Timers::Group.new
     end
 
     # Start up the capture manager using the specified configuration file
-    def boot(config = 'etc/pi_cctv.json')
-      @config = PiCctv::Configuration.new(config)
+    def boot(config_file = 'etc/pi_cctv.json')
+      @config = PiCctv::Configuration.new(config_file)
+
+
+      # Build the context that will be passed to our plugins.
+      @context = {}
+
+      frequency = @config.value("Frequency", 1).to_i
+      frequency = 1 / frequency
+      @context[:frequency] = frequency
+
+      width = @config.value("ImageWidth", 1024).to_i
+      @context[:width] = width
+
+      height = @config.value("ImageHeight", 1024).to_i
+      @context[:height] = height
 
       puts "Booted up with #{@config}."
+
+      # Start taking surveillance!
+      @timer_group.every(frequency) { PiCctv::CaptureManager.instance.timer_handler }
+      loop { @timer_group.wait }
+    end
+
+    def timer_handler()
+      # Take picture here.
+      current_time = Time.new
+      image_file_path = 'foo'
+
+      # Update the context
+      @context[:capture_time] = current_time
+
+      # Next, iterate over the pre-storage handlers.
+      @capture_handlers[PRE_STORAGE].each do | plugin |
+        begin
+          plugin.process(image_file_path, @context)
+        rescue standarderror => error
+          puts "Error: '#{error}' while executing pre-storage handler '#{plugin.name}'."
+        end
+      end
+
+      # Next, store the image
+      begin
+        @active_storage_handler.store(image_file_path, @context)
+      rescue StandardError => error
+        puts "Error: '#{error}' while executing storage handler '#{@active_storage_handler.name}'."
+      end
+
+      # Finally, run the post-storage handlers.
+      @capture_handlers[POST_STORAGE].each do | plugin |
+        begin
+          plugin.process(image_file_path, @context)
+        rescue standarderror => error
+          puts "Error: '#{error}' while executing post-storage handler '#{plugin.name}'."
+        end
+      end
     end
 
     # Set the active storage handler
@@ -94,7 +153,7 @@ module PiCctv
         return
       end
 
-      @capture_handlers[execute_when] = handler
+      @capture_handlers[execute_when].push(handler)
     end
   end
 end
@@ -102,9 +161,8 @@ end
 ###############################################################################
 
 class TestStorageHandler < PiCctv::StorageHandler
-
   def store(image_path, context)
-    puts(image_path, context)
+    puts "#{image_path}, #{context}"
   end
 
   # Should return name of the active storage handler.
@@ -116,7 +174,13 @@ end
 ###############################################################################
 
 class TestCaptureHandler < PiCctv::CaptureHandler
+  def process(image, context)
+    puts "#{image}, #{context}"
+  end
 
+  def name()
+    "TestCaptureHandler"
+  end
 end
 
 captureManager = PiCctv::CaptureManager.instance
@@ -127,3 +191,4 @@ captureManager.register_capture_handler(TestCaptureHandler.new)
 captureManager.register_capture_handler(TestCaptureHandler.new, PiCctv::PRE_STORAGE)
 
 captureManager.boot
+

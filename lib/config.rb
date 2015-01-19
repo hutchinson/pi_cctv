@@ -28,7 +28,6 @@ module PiCctv
        default
      end
     end
-
   end
 end
 
