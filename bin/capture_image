@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+
+CAPTURE_PROGRAM_NAME="raspistill"
+CAPTURE_PROGRAM=`which $CAPTURE_PROGRAM_NAME`
+
+# Check our chosen capture program is available
+if [ ! -x $CAPTURE_PROGRAM ]
+then
+  echo "ERROR: '$CAPTURE_PROGRAM' not found on host."
+  exit 1
+else
+  echo "INFO: '$CAPTURE_PROGRAM' found on host."
+fi
+
+# Handle the raspicam options and run it.
+if [ $CAPTURE_PROGRAM_NAME = "raspistill" ]
+then
+  echo "INFO: Running with raspistill."
+
+  # Check we've got a location to write to.
+  if [ -z $OUTPUT_FILE ]
+  then
+    echo "ERROR: No output path specified."
+    exit 2
+  fi
+
+  # Execute the raspistill to capture the image
+  exec raspistill -w ${IMAGE_WIDTH:-640}    \
+	          -h ${IMAGE_HEIGHT:-480}   \
+		  -q ${IMAGE_QUALITY:-50}   \
+	          --vstab                   \
+                  --ev auto                 \
+                  --awb auto                \
+                  --metering average        \
+                  --timeout 50              \
+		  --nopreview               \
+	          -o ${OUTPUT_FILE}
+fi
+ 
