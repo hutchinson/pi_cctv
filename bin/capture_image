@@ -4,9 +4,9 @@ CAPTURE_PROGRAM_NAME="raspistill"
 CAPTURE_PROGRAM=`which $CAPTURE_PROGRAM_NAME`
 
 # Check our chosen capture program is available
-if [ ! -x $CAPTURE_PROGRAM ]
+if [ -z $CAPTURE_PROGRAM ] || [ ! -x $CAPTURE_PROGRAM ]
 then
-  echo "ERROR: '$CAPTURE_PROGRAM' not found on host."
+  echo "ERROR: '$CAPTURE_PROGRAM_NAME' not found on host."
   exit 1
 else
   echo "INFO: '$CAPTURE_PROGRAM' found on host."
